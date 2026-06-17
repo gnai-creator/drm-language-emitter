@@ -1,0 +1,4 @@
+Directional relational manifolds guide language as trajectories.
+The model evolves a latent state through active directions and a learned relational metric.
+Generation is a rollout, not self-attention.
+This corpus is intentionally tiny and exists only for smoke tests.

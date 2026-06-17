@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use DRM Language Emitter in research, please cite this repository."
+title: "DRM Language Emitter"
+abstract: "An experimental non-Transformer language model driven by trajectories on Directional Relational Manifolds."
+authors:
+  - name: "DRM Language Emitter contributors"
+license: "AGPL-3.0-only"
+version: "0.1.0"
+date-released: "2026-06-17"
+repository-code: "https://github.com/gnai-creator/drm-language-emitter"
+keywords:
+  - "language-model"
+  - "non-transformer"
+  - "directional-relational-manifold"
+  - "generative-model"
+  - "pytorch"

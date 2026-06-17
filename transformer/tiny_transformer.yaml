@@ -1,0 +1,10 @@
+vocab_size: 256
+d_model: 64
+n_heads: 4
+n_layers: 2
+hidden_size: 128
+max_seq_len: 64
+dropout: 0.0
+generation_temperature: 0.9
+top_k: 20
+seed: 1337
