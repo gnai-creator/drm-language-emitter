@@ -8,7 +8,9 @@ from typing import Any
 
 import torch
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from drm_language_emitter.config import DRMConfig
 from drm_language_emitter.data import build_tokenizer, ensure_text, make_lm_batch

@@ -51,6 +51,8 @@ coverage.xml
 .pytest_cache/
 cover/
 runs/
+data/tiny_world/
+data/tiny_world_smoke/
 
 # Translations
 *.mo

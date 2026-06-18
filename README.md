@@ -171,6 +171,16 @@ Profile:
 python scripts/profile_drm.py --checkpoint runs/quick_compare/drm/drm_tiny.pt
 ```
 
+Tiny symbolic world-model competition:
+
+```bash
+python scripts/make_tiny_world_dataset.py --output-root data/tiny_world --seed 1 --grid-size 5 --num-train 20000 --num-val 2000 --max-rollout-len 8
+python scripts/sweep_world_model_competition.py --steps 1000 2000 3000 --seeds 1 2 3 --dataset-root data/tiny_world --output-root runs/world_model_competition
+python scripts/make_world_model_dashboard.py --root runs/world_model_competition --title "DRM vs Transformer vs Tiny Symbolic World Model"
+```
+
+The tiny world-model benchmark compares DRM, Transformer, and a small top-level `world_model/` seq2seq GRU on a serialized symbolic gridworld. It is not a claim about large multimodal world models.
+
 Interpretation: the arena is designed to discover where DRM can win honestly: internal ablation, robustness, low-action bridge, recurrence/stability, parameter matching, or long-horizon learning.
 
 ## Scientific Status

@@ -1,0 +1,8 @@
+vocab_size: 259
+d_model: 80
+hidden_size: 128
+n_layers: 1
+dropout: 0.0
+max_input_len: 192
+max_target_len: 192
+seed: 1337
