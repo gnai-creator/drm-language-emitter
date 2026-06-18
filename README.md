@@ -1,30 +1,94 @@
 # DRM Language Emitter
 
-DRM Language Emitter is an experimental non-Transformer language model in which token generation is driven by trajectories on a Directional Relational Manifold. Instead of self-attention, the model evolves a latent state through active directional fields, a learned relational metric, and low-action dynamics, then emits tokens from the resulting state.
+**A geometry-first language model lab for building generative AI without attention, without Q/K/V, and without Transformer blocks.**
 
-This repository is a research scaffold. It is not validated as a competitive language model.
+![DRM Language Emitter manifold banner](assets/drm-language-emitter-banner.svg)
 
-## What It Is
+[![Python](https://img.shields.io/badge/python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](pyproject.toml)
+[![PyTorch](https://img.shields.io/badge/PyTorch-pure%20torch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](pyproject.toml)
+[![Non Transformer](https://img.shields.io/badge/architecture-non--Transformer-14B8A6?style=for-the-badge)](ARCHITECTURE.md)
+[![No Attention](https://img.shields.io/badge/attention-none-0F172A?style=for-the-badge)](tests/test_no_transformer.py)
+[![Benchmarks](https://img.shields.io/badge/benchmarks-reproducible-F59E0B?style=for-the-badge)](docs/benchmarks/README.md)
+[![License](https://img.shields.io/badge/license-AGPL--3.0-64748B?style=for-the-badge)](LICENSE)
 
-The model is an autoregressive language emitter whose hidden computation is a geometric rollout:
+DRM Language Emitter turns language generation into controlled motion through a learned relational manifold: active directions choose where the model can move, a learned metric shapes how expensive that movement is, and an emitter decodes the resulting state into tokens.
+
+This is a research scaffold, not a production model and not a claim of superiority over Transformers or general world models.
+
+## Quick Links
+
+- [Architecture](ARCHITECTURE.md)
+- [Mathematical Notes](docs/math.md)
+- [Competition Protocol](docs/competition.md)
+- [Tiny World-Model Competition](docs/world_model_competition.md)
+- [Benchmark Artifacts](docs/benchmarks/README.md)
+- [Model Card](MODEL_CARD.md)
+- [Limitations](docs/limitations.md)
+- [Commercial License](LICENCE-COMMERCIAL.md)
+
+## What Makes It Different
+
+DRM Language Emitter does not use:
+
+- Transformer blocks;
+- self-attention;
+- Q/K/V attention;
+- `nn.MultiheadAttention`;
+- KV cache.
+
+Its central computation is a latent trajectory:
 
 ```text
-input token -> embedding e_t
-latent state z_t in M
-active directions D(z_t) with gates a_i(z_t)
-relational metric g_z
-velocity dz in span(D(z_t))
-state update z_{t+1} = z_t + dt * dz
-token logits p(token_{t+1} | z_{t+1})
+token e_t
+  -> latent state z_t in M
+  -> active directions D(z_t)
+  -> gates a_i(z_t), effective dimD(z_t)
+  -> relational metric g_z = diag + U U^T
+  -> velocity dz in span(D(z_t))
+  -> z_{t+1}
+  -> token logits
 ```
 
-There is no self-attention, no query/key/value mechanism, no Transformer block, and no KV cache.
+The working hypothesis is that language generation can be modeled as motion through a relational state space, where geometry is measurable through action, condition, active dimension, recurrence, stability, and low-action path diagnostics.
 
-## Difference From A Transformer
+## Install
 
-Transformers compute token-token interactions through attention over a sequence. DRM Language Emitter keeps a single evolving latent state and updates it through a learned directional field. The model can emit one token at a time, but its central operation is not attention over previous tokens. Memory enters through the trajectory of `z_t`.
+```bash
+pip install -e .
+```
 
-## Architecture Diagram
+Optional dev tools:
+
+```bash
+pip install -e ".[dev]"
+```
+
+The project is CPU-runnable. CUDA is optional; the latest local benchmark was CPU-only because the environment reported `torch=2.12.0+cpu` and `cuda_available=False`.
+
+## Quickstart
+
+Train a tiny DRM model:
+
+```bash
+python scripts/train_tiny.py --config configs/tiny.yaml --text data/tiny.txt
+```
+
+Generate text:
+
+```bash
+python scripts/generate.py --checkpoint runs/tiny/drm_tiny.pt --prompt "DRM "
+```
+
+Run geometry diagnostics:
+
+```bash
+python scripts/eval_geometry.py --checkpoint runs/tiny/drm_tiny.pt
+python scripts/eval_geodesic_paths.py --checkpoint runs/tiny/drm_tiny.pt
+```
+
+If `data/tiny.txt` is missing, the training script creates a tiny fallback corpus. The default tokenizer is byte-level, so mixed case, digits, punctuation, and prompts such as `DRM` are representable.
+
+## Architecture
 
 ```text
 input_ids
@@ -32,119 +96,104 @@ input_ids
 TokenEmbedding
   |
 for each time step:
-  z_t -----------------------+
-   |                         |
-DirectionField(z_t)          |
-  -> directions V(z_t)       |
-  -> gates a(z_t), dimD      |
-   |                         |
-RelationalMetric(z_t)        |
-  -> diag + U U^T            |
-   |                         |
-DRMFlow(z_t, e_t, V, a)      |
-  -> dz in span active D     |
-   |                         |
-metric action g_z(dz,dz)     |
-   |                         |
-StateUpdater                 |
-  -> z_{t+1}                 |
-   |                         |
-LanguageEmitter(z_{t+1}) ----+
-  -> logits
+  z_t
+   |
+DirectionField(z_t) -> directions V(z_t), gates a(z_t), dimD
+   |
+RelationalMetric(z_t) -> diag + U U^T
+   |
+DRMFlow(z_t, e_t, V, a) -> dz in active directional span
+   |
+metric action g_z(dz, dz)
+   |
+StateUpdater -> z_{t+1}
+   |
+LanguageEmitter(z_{t+1}) -> logits
 ```
 
-## Quickstart
+The model is autoregressive, but its memory is the evolving latent state rather than attention over a token sequence.
 
-```bash
-pip install -e .
-pytest -q
-python scripts/train_tiny.py --config configs/tiny.yaml --text data/tiny.txt
-python scripts/generate.py --checkpoint runs/tiny/drm_tiny.pt --prompt "DRM "
-python scripts/eval_geometry.py --checkpoint runs/tiny/drm_tiny.pt
-python scripts/eval_geodesic_paths.py --checkpoint runs/tiny/drm_tiny.pt
-```
+Read the full design in [ARCHITECTURE.md](ARCHITECTURE.md).
 
-If `data/tiny.txt` is missing, the training script creates a tiny fallback corpus. The default tokenizer is byte-level with vocabulary size 256, so prompts such as `DRM`, punctuation, digits, and mixed case do not become unknown tokens.
+## Main Components
 
-## Tiny Training
-
-`scripts/train_tiny.py` trains with next-token prediction on CPU by default. It logs train CE, fixed validation CE, approximate perplexity, action, effective active dimension, active fraction, metric norm, and a condition proxy.
-
-## Generation
-
-`scripts/generate.py` loads a checkpoint and tokenizer, warms the latent state with the prompt, then samples tokens from the emitter. Each sampled token updates the latent state through `DRMFlow`.
+- `src/drm_language_emitter/config.py`: `DRMConfig`
+- `src/drm_language_emitter/direction_field.py`: active directional fields and gates
+- `src/drm_language_emitter/metric.py`: relational metric `diag + U U^T`
+- `src/drm_language_emitter/dynamics.py`: DRM flow and metric naturalization
+- `src/drm_language_emitter/model.py`: causal language emitter
+- `transformer/`: tiny Transformer baseline
+- `world_model/`: tiny symbolic seq2seq world-model baseline
 
 ## Diagnostics
 
-`scripts/eval_geometry.py` saves JSON metrics:
+The code logs and exports:
 
-- `dimD_mean`, `dimD_std`, `active_fraction`
-- `action_mean`
-- `metric_U_norm_mean`, `metric_U_variance`
-- `condition_proxy`
-- `recurrence_proxy`, `stability_proxy`
-- `risk_mass_mean` when the risk scaffold is active
+- cross entropy and approximate perplexity;
+- metric action;
+- effective active dimension `dimD`;
+- gate entropy and hard/soft active fractions;
+- metric low-rank norm and condition proxy;
+- recurrence and stability proxies;
+- learned low-action path diagnostics;
+- symbolic world-modeling metrics in the gridworld benchmark.
 
-`scripts/eval_geodesic_paths.py` compares linear interpolation against DRM rollout action. It evaluates learned low-action trajectories, not an exact geodesic solver.
+Important caveat: `scripts/eval_geodesic_paths.py` evaluates learned low-action trajectories. It is not an exact geodesic solver.
 
-`scripts/run_full_trainings.py` runs the standard sweep over full, risk, and fixed-dimension configs, then emits generations and geometry JSON reports for each run.
+## Benchmarks
 
-Recommended v3 stability run:
+Benchmark outputs that are small enough to keep are copied to `docs/benchmarks/`. Large run directories remain under `runs/` and are ignored by git.
 
-```bash
-python scripts/run_full_trainings.py --steps 2000 --batch-size 16 --output-root runs/full_v3
-```
+### DRM vs Transformer
 
-Gate sparsity experiment:
-
-```bash
-python scripts/run_full_trainings.py --configs configs/tiny.yaml configs/tiny_gate_sparse.yaml configs/fixed_dim_ablation.yaml --steps 2000 --batch-size 16 --output-root runs/gate_sparsity_v3
-```
-
-Each training directory saves `drm_tiny_best.pt`, `drm_tiny_last.pt`, `drm_tiny.pt` as an alias of the best checkpoint, `tokenizer.json`, and `metrics.json`.
-
-Summarize a completed sweep:
-
-```bash
-python scripts/summarize_runs.py --root runs/full_v3
-```
-
-## Tiny Transformer Baseline
-
-Run a controlled DRM vs Transformer comparison:
-
-```bash
-python scripts/compare_drm_transformer.py --steps 400 --batch-size 8 --output-root runs/drm_vs_transformer_400
-```
-
-This saves:
+Versioned dashboard:
 
 ```text
-runs/drm_vs_transformer_400/comparison.json
-runs/drm_vs_transformer_400/comparison.svg
+docs/benchmarks/drm_transformer_full_1k_3k/dashboard.html
 ```
 
-Run a parameter/seed/step sweep:
+Run the sweep:
 
 ```bash
-python scripts/sweep_drm_transformer.py --steps 400 1000 2000 --seeds 1 2 3 --output-root runs/sweep_drm_transformer
+python scripts/sweep_drm_transformer.py --steps 1000 2000 3000 --seeds 1 2 3 --output-root runs/sweep_drm_transformer
+python scripts/make_competition_dashboard.py --root runs/sweep_drm_transformer --title "DRM vs Transformer Sweep"
 ```
 
-## Competition Status
+Current interpretation: DRM showed strong step-matched and parameter-matched results in the tiny regime, while Transformer throughput remains much higher. This does not establish broad superiority.
 
-The current controlled 400-step tiny comparison shows the Tiny Transformer beating DRM in validation CE. DRM remains geometrically stable, but the project does not claim Transformer superiority or DRM superiority globally from this result.
+### DRM vs Transformer vs Tiny World Model
 
-Quick comparison:
+Versioned dashboard:
+
+```text
+docs/benchmarks/world_model_competition/dashboard.html
+```
+
+Run the benchmark:
+
+```bash
+python scripts/make_tiny_world_dataset.py --output-root data/tiny_world --seed 1 --grid-size 5 --num-train 20000 --num-val 2000 --max-rollout-len 8
+python scripts/sweep_world_model_competition.py --steps 1000 2000 3000 --seeds 1 2 3 --dataset-root data/tiny_world --output-root runs/world_model_competition
+python scripts/make_world_model_dashboard.py --root runs/world_model_competition --title "DRM vs Transformer vs Tiny Symbolic World Model"
+```
+
+Latest local result:
+
+- 72 runs, 24 aggregate rows.
+- Best next-state exact match: `drm_tiny @ 2000` with `0.0751`.
+- Lowest invalid-state rate among top next-state rows: `transformer_tiny_220k @ 3000` with `0.0026`.
+- Best supervised world-model CE among top rows: `world_model_tiny @ 3000` around `0.2497`, but exact-match metrics remained low.
+
+Interpretation: DRM had the best next-state exact-match score in this tiny symbolic text-world benchmark, but absolute symbolic accuracy is still low. This is a diagnostic result, not evidence that DRM is broadly better than Transformers or general world models.
+
+See [docs/report/002_world_model_competition_2026-06-18.md](docs/report/002_world_model_competition_2026-06-18.md).
+
+## Useful Commands
+
+Quick DRM vs Transformer comparison:
 
 ```bash
 python scripts/compare_drm_transformer.py --steps 50 --batch-size 4 --output-root runs/quick_compare
-```
-
-Competition sweep:
-
-```bash
-python scripts/sweep_drm_transformer.py --steps 400 1000 2000 --seeds 1 2 3 --output-root runs/sweep_drm_transformer
-python scripts/summarize_competition.py --root runs/sweep_drm_transformer
 ```
 
 Robustness:
@@ -153,7 +202,7 @@ Robustness:
 python scripts/eval_robustness.py --drm-checkpoint runs/quick_compare/drm/drm_tiny.pt --drm-tokenizer runs/quick_compare/drm/tokenizer.json --transformer-checkpoint runs/quick_compare/transformer/tiny_transformer.pt
 ```
 
-Bridge:
+Bridge diagnostic:
 
 ```bash
 python scripts/eval_bridge_task.py --checkpoint runs/quick_compare/drm/drm_tiny.pt --tokenizer runs/quick_compare/drm/tokenizer.json
@@ -165,40 +214,71 @@ Sequence stability:
 python scripts/eval_sequence_stability.py --drm-checkpoint runs/quick_compare/drm/drm_tiny.pt --drm-tokenizer runs/quick_compare/drm/tokenizer.json --transformer-checkpoint runs/quick_compare/transformer/tiny_transformer.pt
 ```
 
-Profile:
+DRM profile:
 
 ```bash
 python scripts/profile_drm.py --checkpoint runs/quick_compare/drm/drm_tiny.pt
 ```
 
-Tiny symbolic world-model competition:
+## Tests
 
 ```bash
-python scripts/make_tiny_world_dataset.py --output-root data/tiny_world --seed 1 --grid-size 5 --num-train 20000 --num-val 2000 --max-rollout-len 8
-python scripts/sweep_world_model_competition.py --steps 1000 2000 3000 --seeds 1 2 3 --dataset-root data/tiny_world --output-root runs/world_model_competition
-python scripts/make_world_model_dashboard.py --root runs/world_model_competition --title "DRM vs Transformer vs Tiny Symbolic World Model"
+python -m pytest -q
 ```
 
-The tiny world-model benchmark compares DRM, Transformer, and a small top-level `world_model/` seq2seq GRU on a serialized symbolic gridworld. It is not a claim about large multimodal world models.
+If `pytest` is not installed:
 
-Interpretation: the arena is designed to discover where DRM can win honestly: internal ablation, robustness, low-action bridge, recurrence/stability, parameter matching, or long-horizon learning.
+```bash
+pip install -e ".[dev]"
+```
+
+CUDA tests are conditional. They run only when `torch.cuda.is_available()` is true.
+
+## Repository Map
+
+```text
+configs/                 DRM and benchmark configs
+docs/                    math, limitations, competition notes, benchmark artifacts
+scripts/                 training, generation, evaluation, sweeps, dashboards
+src/drm_language_emitter/ DRM model package
+tests/                   smoke and invariant tests
+transformer/             tiny Transformer baseline
+world_model/             tiny symbolic world-model baseline
+```
 
 ## Scientific Status
 
-The code implements a functional hypothesis: language generation can be driven by state trajectories over active relational directions and a learned metric. The present version is only a minimal CPU-runnable prototype.
+Allowed claims:
+
+- DRM Language Emitter is a functional non-Transformer language model prototype.
+- Its geometry is explicit, measurable, and trainable in small experiments.
+- The repository includes controlled tiny comparisons against Transformer and a tiny symbolic world model.
+
+Not allowed:
+
+- DRM is better than Transformers in general.
+- DRM is better than world models in general.
+- The model has proven emergent geodesics.
+- The model has proven toroidal topology.
+- The model is production-ready or safety-evaluated.
 
 ## Limitations
 
-- The temporal loop is slow compared with modern Transformer kernels.
-- The tokenizer is only a simple character-level fallback.
-- The learned low-action diagnostic is not a formal geodesic solver.
-- No large benchmark, safety evaluation, RLHF, alignment claim, or production claim is included.
+- The temporal loop is slow compared with optimized Transformer kernels.
+- Benchmarks are tiny and diagnostic.
+- Low-action path evaluation is not a formal geodesic solver.
+- Symbolic world-modeling exact match is still low.
+- No large-scale benchmark, RLHF, alignment evaluation, or safety validation is included.
 - Toroidal convergence is not guaranteed; it is only a possible diagnostic under boundedness, recurrence, and stability assumptions.
 
 ## Roadmap
 
-- Add stronger trajectory integrators and explicit variational path objectives.
-- Add richer tokenization and batching.
-- Compare variable active dimension against fixed-dimension baselines.
-- Study metric diversity, recurrence, and stability across training.
-- Investigate pullback/Fisher-style metrics as future work.
+- Add stronger trajectory integrators and variational path objectives.
+- Improve constrained symbolic decoding for the world benchmark.
+- Add time-matched CUDA comparisons.
+- Broaden ablations around metric, gates, and active dimension.
+- Study pullback/Fisher-style metrics as future work.
+
+## License
+
+This project is released under AGPL-3.0. For commercial licensing, see [LICENCE-COMMERCIAL.md](LICENCE-COMMERCIAL.md) or contact `felupe@truthagi.ai`.

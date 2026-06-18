@@ -1,0 +1,2 @@
+best_val_ce,done_accuracy,elapsed_sec,final_val_ce,invalid_state_rate,kind,model,next_state_exact_match,parameter_count,reward_accuracy,rollout_exact_match,rollout_token_accuracy,run_dir,seed,steps,tokens_per_sec,tokens_seen
+0.24862189429847795,0.9523809523809523,1115.2791256000055,0.25131475701158845,0.466796875,world_model,world_model_stronger,0.03663003663003663,215411,0.9523809523809523,0.0,0.882490171512507,runs\world_model_competition\world_model_stronger\steps_3000\seed_3,3,3000,8306.298059871788,9216000
