@@ -25,7 +25,7 @@ For the MVP, `z_t` is represented by a vector in `R^d_state`. This is a coordina
 ```math
 D(z) = \{V_i(z)\}_{i=1}^{n_{\text{directions}}}, \qquad
 a_i(z) \in [0, 1], \qquad
-\operatorname{dim}_{\text{active}}(z) = \sum_i a_i(z)
+\mathrm{dim}_{\text{active}}(z) = \sum_i a_i(z)
 ```
 
 The directions are not orthogonalized. Optional normalization keeps their scale controlled but does not impose an orthonormal frame. The gates define an effective local active dimension.
@@ -36,7 +36,7 @@ The metric is:
 
 ```math
 G(z) =
-\operatorname{diag}(\operatorname{softplus}(d(z)) + \epsilon)
+\mathrm{diag}(\mathrm{softplus}(d(z)) + \epsilon)
 + U(z)U(z)^\top
 ```
 
@@ -107,7 +107,7 @@ This does not make the model an exact geodesic solver. It biases learned traject
 
 ```math
 \ell_t = f_{\text{emit}}(z_t), \qquad
-p(x_{t+1} \mid x_{\le t}) = \operatorname{softmax}(\ell_t)
+p(x_{t+1} \mid x_{\le t}) = \mathrm{softmax}(\ell_t)
 ```
 
 For supervised language modeling, the primary loss is token cross entropy:
