@@ -53,3 +53,7 @@ emitter_layers: 1
 emitter_swiglu: false
 emitter_residual: false
 use_torch_compile: false
+geometry_update_interval: 4
+direction_basis_size: 128
+metric_u_basis_size: 128
+bptt_truncate_interval: 64

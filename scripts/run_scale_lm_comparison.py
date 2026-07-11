@@ -4,6 +4,8 @@ import argparse
 import csv
 import json
 import math
+import subprocess
+import sys
 import time
 from pathlib import Path
 from statistics import mean, pstdev
@@ -26,9 +28,9 @@ from prepare_wikipedia_en import (
 MODEL_SPECS: dict[str, dict[str, Any]] = {
     "drm_125m": {"family": "drm", "config": "configs/drm_125m.yaml", "scale": "125m"},
     "drm_350m": {"family": "drm", "config": "configs/drm_350m.yaml", "scale": "350m"},
-    "gpt2_125m": {"family": "gpt2", "scale": "125m", "n_layer": 12, "n_head": 12, "n_embd": 768},
+    "gpt2_125m": {"family": "gpt2", "scale": "125m", "n_layer": 12, "n_head": 12, "n_embd": 504},
     "gpt2_350m": {"family": "gpt2", "scale": "350m", "n_layer": 24, "n_head": 16, "n_embd": 1024},
-    "opt_125m": {"family": "opt", "scale": "125m", "hidden_size": 768, "layers": 12, "heads": 12, "ffn_dim": 3072},
+    "opt_125m": {"family": "opt", "scale": "125m", "hidden_size": 504, "layers": 12, "heads": 12, "ffn_dim": 2016},
     "opt_350m": {"family": "opt", "scale": "350m", "hidden_size": 1024, "layers": 24, "heads": 16, "ffn_dim": 4096},
 }
 
@@ -125,9 +127,10 @@ def forward_loss(
     x: torch.Tensor,
     y: torch.Tensor,
     global_step: int,
+    collect_diagnostics: bool = True,
 ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
     if family == "drm":
-        out = model(x, y, global_step=global_step)
+        out = model(x, y, global_step=global_step, collect_diagnostics=collect_diagnostics)
         return out["loss"], out.get("diagnostics", {})
     out = model(input_ids=x, labels=y)
     loss = out.loss
@@ -150,7 +153,7 @@ def evaluate(
     diagnostics_accum: dict[str, list[float]] = {}
     for _ in range(max(batches, 1)):
         x, y = make_lm_batch(ids, batch_size, seq_len, device)
-        loss, diagnostics = forward_loss(model, family, x, y, global_step)
+        loss, diagnostics = forward_loss(model, family, x, y, global_step, collect_diagnostics=True)
         losses.append(float(loss.detach()))
         for key, value in diagnostics.items():
             if isinstance(value, torch.Tensor) and value.numel() == 1:
@@ -167,6 +170,15 @@ def memory_allocated_mb(device: torch.device) -> float | None:
         return torch.cuda.max_memory_allocated(device) / (1024 * 1024)
     except (AttributeError, RuntimeError):
         return None
+
+
+def synchronize_device(device: torch.device) -> None:
+    if device.type != "cuda":
+        return
+    try:
+        torch.cuda.synchronize(device)
+    except (AttributeError, RuntimeError):
+        pass
 
 
 def initialize_device_seed(device: torch.device, seed: int, track_cuda_memory: bool) -> None:
@@ -195,12 +207,15 @@ def train_one(
     device: torch.device,
     eval_interval: int,
     eval_batches: int,
+    eval_first: bool,
+    log_interval: int,
     grad_accum_steps: int,
     dropout: float,
     hf_vocab_size: int,
     dry_run: bool,
     dry_run_forward: bool,
     track_cuda_memory: bool,
+    save_best_checkpoint: bool,
 ) -> dict[str, Any]:
     torch.manual_seed(seed)
     initialize_device_seed(device, seed, track_cuda_memory)
@@ -220,7 +235,7 @@ def train_one(
         if dry_run_forward:
             probe_seq_len = min(seq_len, 8)
             x, y = make_lm_batch(train_ids, 1, probe_seq_len, device)
-            loss, diagnostics = forward_loss(model, family, x, y, global_step=1)
+            loss, diagnostics = forward_loss(model, family, x, y, global_step=1, collect_diagnostics=True)
             probe_loss = float(loss.detach().cpu())
             probe_diag = {key: float(value.detach().cpu()) for key, value in diagnostics.items() if isinstance(value, torch.Tensor) and value.numel() == 1}
         else:
@@ -242,14 +257,19 @@ def train_one(
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
     history = []
     best_val_ce = float("inf")
+    best_step = None
     started = time.perf_counter()
+    train_elapsed = 0.0
+    eval_elapsed = 0.0
     optimizer.zero_grad(set_to_none=True)
     for step in range(1, steps + 1):
+        synchronize_device(device)
+        train_step_started = time.perf_counter()
         step_loss_total = 0.0
         step_diag: dict[str, float] = {}
         for accum_index in range(grad_accum_steps):
             x, y = make_lm_batch(train_ids, batch_size, seq_len, device)
-            loss, diagnostics = forward_loss(model, family, x, y, step)
+            loss, diagnostics = forward_loss(model, family, x, y, step, collect_diagnostics=False)
             (loss / grad_accum_steps).backward()
             step_loss_total += float(loss.detach().cpu())
             if diagnostics:
@@ -261,10 +281,26 @@ def train_one(
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         optimizer.step()
         optimizer.zero_grad(set_to_none=True)
+        synchronize_device(device)
+        train_elapsed += time.perf_counter() - train_step_started
 
-        if step == 1 or step % eval_interval == 0 or step == steps:
+        should_eval = (eval_first and step == 1) or step % eval_interval == 0 or step == steps
+        should_log_train = log_interval > 0 and step % log_interval == 0 and not should_eval
+        if should_log_train:
+            tokens_seen = step * grad_accum_steps * batch_size * seq_len
             train_ce = step_loss_total / grad_accum_steps
+            print(
+                f"model={model_name} step={step} train_ce={train_ce:.4f} "
+                f"train_tokens_sec={tokens_seen / max(train_elapsed, 1e-8):.1f}",
+                flush=True,
+            )
+        if should_eval:
+            train_ce = step_loss_total / grad_accum_steps
+            synchronize_device(device)
+            eval_started = time.perf_counter()
             val_ce, val_diag = evaluate(model, family, val_ids, seq_len, batch_size, device, eval_batches, step)
+            synchronize_device(device)
+            eval_elapsed += time.perf_counter() - eval_started
             best_val_ce = min(best_val_ce, val_ce)
             elapsed = time.perf_counter() - started
             tokens_seen = step * grad_accum_steps * batch_size * seq_len
@@ -276,21 +312,50 @@ def train_one(
                 "val_ppl": float(math.exp(min(val_ce, 20.0))),
                 "best_val_ce": best_val_ce,
                 "elapsed_sec": elapsed,
+                "train_elapsed_sec": train_elapsed,
+                "eval_elapsed_sec": eval_elapsed,
                 "tokens_seen": tokens_seen,
-                "tokens_per_sec": tokens_seen / max(elapsed, 1e-8),
+                "tokens_per_sec": tokens_seen / max(train_elapsed, 1e-8),
+                "wall_tokens_per_sec": tokens_seen / max(elapsed, 1e-8),
                 "parameter_count": parameter_count,
                 "max_memory_mb": memory_allocated_mb(device) if track_cuda_memory else None,
             }
             for key, value in {**step_diag, **{f"val_{k}": v for k, v in val_diag.items()}}.items():
                 row[key] = value
             history.append(row)
+            if val_ce <= best_val_ce:
+                best_step = step
+                if save_best_checkpoint:
+                    torch.save(
+                        {
+                            "model": model.state_dict(),
+                            "config": model_config,
+                            "summary": {
+                                "model": model_name,
+                                "family": family,
+                                "scale": MODEL_SPECS[model_name]["scale"],
+                                "seed": seed,
+                                "parameter_count": parameter_count,
+                                "best_val_ce": best_val_ce,
+                                "best_step": best_step,
+                                "elapsed_sec": elapsed,
+                                "train_elapsed_sec": train_elapsed,
+                                "eval_elapsed_sec": eval_elapsed,
+                                "tokens_seen": tokens_seen,
+                            },
+                        },
+                        run_dir / "checkpoint_best.pt",
+                    )
             print(
                 f"model={model_name} step={step} train_ce={train_ce:.4f} "
                 f"val_ce={val_ce:.4f} val_ppl={row['val_ppl']:.2f} "
-                f"tokens_sec={row['tokens_per_sec']:.1f}",
+                f"train_tokens_sec={row['tokens_per_sec']:.1f} "
+                f"wall_tokens_sec={row['wall_tokens_per_sec']:.1f} "
+                f"eval_sec={eval_elapsed:.1f}",
                 flush=True,
             )
 
+    wall_elapsed = time.perf_counter() - started
     summary = {
         "model": model_name,
         "family": family,
@@ -298,17 +363,50 @@ def train_one(
         "seed": seed,
         "parameter_count": parameter_count,
         "best_val_ce": best_val_ce,
+        "best_step": best_step,
         "final_train_ce": history[-1]["train_ce"] if history else None,
         "final_val_ce": history[-1]["val_ce"] if history else None,
         "final_val_ppl": history[-1]["val_ppl"] if history else None,
-        "elapsed_sec": time.perf_counter() - started,
+        "elapsed_sec": wall_elapsed,
+        "train_elapsed_sec": train_elapsed,
+        "eval_elapsed_sec": eval_elapsed,
         "tokens_seen": steps * grad_accum_steps * batch_size * seq_len,
         "tokens_per_sec": history[-1]["tokens_per_sec"] if history else None,
+        "wall_tokens_per_sec": (steps * grad_accum_steps * batch_size * seq_len) / max(wall_elapsed, 1e-8),
         "max_memory_mb": memory_allocated_mb(device) if track_cuda_memory else None,
     }
     save_json(run_dir / "metrics.json", {"history": history, "summary": summary, "config": model_config})
     torch.save({"model": model.state_dict(), "config": model_config, "summary": summary}, run_dir / "checkpoint_last.pt")
     return summary
+
+
+def profile_drm_run(run_dir: Path, batch_size: int, seq_len: int, repeats: int) -> None:
+    checkpoint = run_dir / "checkpoint_best.pt"
+    if not checkpoint.exists():
+        checkpoint = run_dir / "checkpoint_last.pt"
+    if not checkpoint.exists():
+        return
+    output_json = run_dir / "profile.json"
+    output_md = run_dir / "profile.md"
+    subprocess.run(
+        [
+            sys.executable,
+            str(Path(__file__).with_name("profile_drm.py")),
+            "--checkpoint",
+            str(checkpoint),
+            "--output-json",
+            str(output_json),
+            "--output-md",
+            str(output_md),
+            "--batch-size",
+            str(batch_size),
+            "--seq-len",
+            str(seq_len),
+            "--repeats",
+            str(repeats),
+        ],
+        check=True,
+    )
 
 
 def aggregate(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -318,12 +416,16 @@ def aggregate(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     metrics = [
         "parameter_count",
         "best_val_ce",
+        "best_step",
         "final_train_ce",
         "final_val_ce",
         "final_val_ppl",
         "elapsed_sec",
+        "train_elapsed_sec",
+        "eval_elapsed_sec",
         "tokens_seen",
         "tokens_per_sec",
+        "wall_tokens_per_sec",
         "max_memory_mb",
         "probe_loss",
     ]
@@ -555,10 +657,17 @@ def main() -> None:
     parser.add_argument("--dropout", type=float, default=0.0)
     parser.add_argument("--eval-interval", type=int, default=10)
     parser.add_argument("--eval-batches", type=int, default=2)
+    parser.add_argument("--eval-first", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--log-interval", type=int, default=0)
     parser.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
     parser.add_argument("--hf-vocab-size", type=int, default=256)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--dry-run-forward", action="store_true")
+    parser.add_argument("--save-best-checkpoint", action=argparse.BooleanOptionalAction, default=False)
+    parser.add_argument("--profile-drm", action="store_true")
+    parser.add_argument("--profile-batch-size", type=int, default=1)
+    parser.add_argument("--profile-seq-len", type=int, default=32)
+    parser.add_argument("--profile-repeats", type=int, default=3)
     parser.add_argument("--no-cuda-memory-stats", action="store_true")
     parser.add_argument("--strict-device", action="store_true")
     args = parser.parse_args()
@@ -585,13 +694,23 @@ def main() -> None:
                 device=device,
                 eval_interval=args.eval_interval,
                 eval_batches=args.eval_batches,
+                eval_first=args.eval_first,
+                log_interval=args.log_interval,
                 grad_accum_steps=args.grad_accum_steps,
                 dropout=args.dropout,
                 hf_vocab_size=args.hf_vocab_size,
                 dry_run=args.dry_run,
                 dry_run_forward=args.dry_run_forward,
                 track_cuda_memory=not args.no_cuda_memory_stats,
+                save_best_checkpoint=args.save_best_checkpoint,
             )
+            if args.profile_drm and MODEL_SPECS[model_name]["family"] == "drm" and not args.dry_run:
+                profile_drm_run(
+                    run_dir=run_dir,
+                    batch_size=args.profile_batch_size,
+                    seq_len=args.profile_seq_len,
+                    repeats=args.profile_repeats,
+                )
             rows.append(row)
     build_outputs(root, rows)
     save_json(root / "dataset.json", dataset_metadata)

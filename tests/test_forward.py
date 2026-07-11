@@ -48,3 +48,39 @@ def test_compiled_forward_failure_falls_back_to_eager():
     out = model(x, y)
     assert out["logits"].shape == (2, 6, 17)
     assert model._compiled_forward is None
+
+
+def test_geometry_update_interval_keeps_forward_finite():
+    config = tiny_config()
+    config.geometry_update_interval = 3
+    model = DRMEmitterModel(config)
+    x = torch.randint(0, 17, (2, 6))
+    y = torch.randint(0, 17, (2, 6))
+    out = model(x, y, collect_diagnostics=False)
+    assert out["logits"].shape == (2, 6, 17)
+    assert torch.isfinite(out["loss"])
+
+
+def test_factorized_geometry_heads_keep_forward_finite():
+    config = tiny_config()
+    config.direction_basis_size = 3
+    config.metric_u_basis_size = 3
+    model = DRMEmitterModel(config)
+    x = torch.randint(0, 17, (2, 6))
+    y = torch.randint(0, 17, (2, 6))
+    out = model(x, y, collect_diagnostics=False)
+    assert out["logits"].shape == (2, 6, 17)
+    assert torch.isfinite(out["loss"])
+
+
+def test_bptt_truncate_interval_keeps_backward_finite():
+    config = tiny_config()
+    config.bptt_truncate_interval = 2
+    model = DRMEmitterModel(config)
+    x = torch.randint(0, 17, (2, 6))
+    y = torch.randint(0, 17, (2, 6))
+    out = model(x, y, collect_diagnostics=False)
+    out["loss"].backward()
+    grads = [p.grad for p in model.parameters() if p.grad is not None]
+    assert grads
+    assert all(torch.isfinite(grad).all() for grad in grads)

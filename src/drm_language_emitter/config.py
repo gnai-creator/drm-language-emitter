@@ -61,6 +61,10 @@ class DRMConfig:
     emitter_swiglu: bool = False
     emitter_residual: bool = False
     use_torch_compile: bool = False
+    geometry_update_interval: int = 1
+    direction_basis_size: int = 0
+    metric_u_basis_size: int = 0
+    bptt_truncate_interval: int = 0
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -82,6 +86,10 @@ class DRMConfig:
             ("n_flow_steps", 1, None),
             ("max_seq_len", 1, None),
             ("gate_top_k", 0, None),
+            ("geometry_update_interval", 1, None),
+            ("direction_basis_size", 0, None),
+            ("metric_u_basis_size", 0, None),
+            ("bptt_truncate_interval", 0, None),
         ]
         for name, min_val, max_val in int_fields:
             val = getattr(self, name)

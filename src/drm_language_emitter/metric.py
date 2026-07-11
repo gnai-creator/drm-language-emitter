@@ -22,13 +22,24 @@ class RelationalMetric(nn.Module):
             nn.GELU(),
         )
         self.diag_head = nn.Linear(h, config.d_state)
-        self.u_head = nn.Linear(h, config.d_state * config.metric_rank)
+        self.u_basis_size = config.metric_u_basis_size
+        if self.u_basis_size and config.metric_rank > 0:
+            self.u_basis = nn.Parameter(torch.empty(self.u_basis_size, config.d_state))
+            nn.init.normal_(self.u_basis, std=0.02)
+            self.u_head = nn.Linear(h, config.metric_rank * self.u_basis_size)
+        else:
+            self.u_basis = None
+            self.u_head = nn.Linear(h, config.d_state * config.metric_rank)
 
     def forward(self, z: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         h = self.trunk(z)
         diag = F.softplus(self.diag_head(h)) + self.config.metric_eps
         if self.config.metric_rank == 0:
             u = z.new_zeros(z.shape[0], self.config.d_state, 0)
+        elif self.u_basis is not None:
+            coefficients = self.u_head(h).view(z.shape[0], self.config.metric_rank, self.u_basis_size)
+            u = torch.matmul(coefficients, self.u_basis).transpose(1, 2)
+            u = u / max(self.config.metric_rank, 1) ** 0.5
         else:
             u = self.u_head(h).view(z.shape[0], self.config.d_state, self.config.metric_rank)
             u = u / max(self.config.metric_rank, 1) ** 0.5

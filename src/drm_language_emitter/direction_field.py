@@ -21,14 +21,25 @@ class DirectionField(nn.Module):
             nn.Linear(h, h),
             nn.GELU(),
         )
-        self.direction_head = nn.Linear(h, config.n_directions * config.d_state)
+        self.direction_basis_size = config.direction_basis_size
+        if self.direction_basis_size:
+            self.direction_basis = nn.Parameter(torch.empty(self.direction_basis_size, config.d_state))
+            nn.init.normal_(self.direction_basis, std=0.02)
+            self.direction_head = nn.Linear(h, config.n_directions * self.direction_basis_size)
+        else:
+            self.direction_basis = None
+            self.direction_head = nn.Linear(h, config.n_directions * config.d_state)
         self.gate_head = nn.Linear(h, config.n_directions)
 
     def forward(self, z: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         h = self.trunk(z)
-        directions = self.direction_head(h).view(
-            z.shape[0], self.config.n_directions, self.config.d_state
-        )
+        if self.direction_basis is not None:
+            coefficients = self.direction_head(h).view(z.shape[0], self.config.n_directions, self.direction_basis_size)
+            directions = torch.matmul(coefficients, self.direction_basis)
+        else:
+            directions = self.direction_head(h).view(
+                z.shape[0], self.config.n_directions, self.config.d_state
+            )
         if self.config.direction_norm:
             directions = F.normalize(directions, dim=-1)
         logits = self.gate_head(h) + self.config.gate_logit_bias
