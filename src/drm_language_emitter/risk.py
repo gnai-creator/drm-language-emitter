@@ -11,6 +11,7 @@ class RiskField(nn.Module):
 
     def __init__(self, config: DRMConfig):
         super().__init__()
+        self.config = config
         self.enabled = config.use_powerlaw_risk
         h = config.hidden_size
         self.net = nn.Sequential(
@@ -27,10 +28,19 @@ class RiskField(nn.Module):
     def forward(self, z: torch.Tensor) -> dict[str, torch.Tensor]:
         if not self.enabled:
             zero = z.new_zeros(z.shape[0])
-            return {"blindspot": zero, "dubiety": zero, "risk_mass": zero}
+            return {"blindspot": zero, "dubiety": zero, "risk_mass": zero, "risk_mass_raw": zero}
         values = self.net(z)
         blindspot = values[:, 0]
         dubiety = values[:, 1]
-        risk_mass = self.alpha_b.abs() * blindspot.pow(self.beta_b.abs() + 1e-3)
-        risk_mass = risk_mass + self.alpha_d.abs() * dubiety.pow(self.beta_d.abs() + 1e-3)
-        return {"blindspot": blindspot, "dubiety": dubiety, "risk_mass": risk_mass}
+        alpha_b = self.alpha_b.abs().clamp_max(self.config.risk_alpha_max)
+        alpha_d = self.alpha_d.abs().clamp_max(self.config.risk_alpha_max)
+        beta_b = self.beta_b.abs().clamp(self.config.risk_exponent_min, self.config.risk_exponent_max)
+        beta_d = self.beta_d.abs().clamp(self.config.risk_exponent_min, self.config.risk_exponent_max)
+        risk_mass_raw = alpha_b * blindspot.pow(beta_b) + alpha_d * dubiety.pow(beta_d)
+        risk_mass = risk_mass_raw.clamp_max(self.config.risk_mass_max)
+        return {
+            "blindspot": blindspot,
+            "dubiety": dubiety,
+            "risk_mass": risk_mass,
+            "risk_mass_raw": risk_mass_raw,
+        }

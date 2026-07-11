@@ -44,8 +44,14 @@ class DRMEmitterModel(nn.Module):
         self.updater = StateUpdater(config)
         self.risk = RiskField(config)
         self.emitter = LanguageEmitter(config)
+        self._compiled_forward = None
+        if config.use_torch_compile and hasattr(torch, "compile"):
+            try:
+                self._compiled_forward = torch.compile(self._forward_impl)
+            except Exception:
+                self._compiled_forward = None
 
-    def forward(
+    def _forward_impl(
         self,
         input_ids: torch.Tensor,
         targets: torch.Tensor | None = None,
@@ -120,12 +126,16 @@ class DRMEmitterModel(nn.Module):
         dim_std_value = dim_tensor.std(unbiased=False)
         dim_entropy_value = torch.stack(entropy_values).mean()
         metric_reg = torch.stack(metric_regs).mean()
-        metric_u_floor_loss = (
-            (self.config.metric_u_min_norm - torch.stack(u_norm_values, dim=1))
-            .clamp_min(0.0)
-            .pow(2)
-            .mean()
-        )
+        metric_u_norm_steps = torch.stack(u_norm_values, dim=1)
+        if self.config.metric_rank > 0:
+            metric_u_floor_loss = (
+                (self.config.metric_u_min_norm - metric_u_norm_steps)
+                .clamp_min(0.0)
+                .pow(2)
+                .mean()
+            )
+        else:
+            metric_u_floor_loss = action_loss.new_tensor(0.0)
         metric_div_value = metric_diversity(metric_diag_tensor)
         recurrence_value = recurrence_proxy(state_tensor)
         stability_value = stability_proxy(logits)
@@ -136,7 +146,7 @@ class DRMEmitterModel(nn.Module):
         hard_active_090_value = torch.stack(active_090_values, dim=1).mean()
         soft_active_value = dim_sparsity / self.config.n_directions
         condition_value = torch.stack(condition_values, dim=1).mean()
-        metric_u_norm_value = torch.stack(u_norm_values, dim=1).mean()
+        metric_u_norm_value = metric_u_norm_steps.mean()
         all_gates = torch.cat(gate_flat_values)
         gate_quantiles = torch.quantile(
             all_gates,
@@ -159,7 +169,7 @@ class DRMEmitterModel(nn.Module):
             condition_value,
             metric_u_norm_value,
         )
-        if self.config.lambda_metric_u_floor:
+        if self.config.lambda_metric_u_floor and self.config.metric_rank > 0:
             total_loss = total_loss + self.config.lambda_metric_u_floor * metric_u_floor_loss
             aux_losses["metric_u_floor"] = metric_u_floor_loss
 
@@ -187,6 +197,8 @@ class DRMEmitterModel(nn.Module):
             "recurrence_proxy": recurrence_value,
             "stability_proxy": stability_value,
             "risk_mass_mean": blindspot_value,
+            "risk_mass_std": torch.stack(risk_values, dim=1).std(unbiased=False),
+            "risk_mass_max": torch.stack(risk_values, dim=1).max(),
             "metric_u_floor_loss": metric_u_floor_loss,
             "metric_naturalization_strength": input_ids.new_tensor(float(naturalization_strength), dtype=torch.float32),
         }
@@ -199,6 +211,20 @@ class DRMEmitterModel(nn.Module):
         if return_states:
             out["states"] = state_tensor
         return out
+
+    def forward(
+        self,
+        input_ids: torch.Tensor,
+        targets: torch.Tensor | None = None,
+        return_states: bool = False,
+        global_step: int | None = None,
+    ):
+        if self._compiled_forward is not None:
+            try:
+                return self._compiled_forward(input_ids, targets, return_states, global_step)
+            except Exception:
+                self._compiled_forward = None
+        return self._forward_impl(input_ids, targets, return_states, global_step)
 
     def state_dict_with_config(self) -> dict[str, Any]:
         return {"config": asdict(self.config), "model": self.state_dict()}

@@ -29,6 +29,10 @@ class DRMConfig:
     lambda_recurrence: float = 0.0
     lambda_stability: float = 0.0
     lambda_blindspot: float = 0.0
+    risk_mass_max: float = 10.0
+    risk_exponent_min: float = 0.25
+    risk_exponent_max: float = 4.0
+    risk_alpha_max: float = 10.0
     generation_temperature: float = 1.0
     top_k: int = 40
     metric_eps: float = 1e-4
@@ -56,6 +60,7 @@ class DRMConfig:
     emitter_layers: int = 1
     emitter_swiglu: bool = False
     emitter_residual: bool = False
+    use_torch_compile: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -103,6 +108,10 @@ class DRMConfig:
             ("lambda_recurrence", 0.0, None),
             ("lambda_stability", 0.0, None),
             ("lambda_blindspot", 0.0, None),
+            ("risk_mass_max", 0.0, None),
+            ("risk_exponent_min", 0.0, None),
+            ("risk_exponent_max", 0.0, None),
+            ("risk_alpha_max", 0.0, None),
             ("generation_temperature", 0.1, None),   # temperature > 0
             ("metric_eps", 0.0, None),
             ("state_clip_norm", 0.0, None),
@@ -142,11 +151,14 @@ class DRMConfig:
             "gate_top_k_renorm",
             "emitter_swiglu",
             "emitter_residual",
+            "use_torch_compile",
         ]
         for name in bool_fields:
             val = getattr(self, name)
             if not isinstance(val, bool):
                 raise ValueError(f"'{name}' must be a boolean, got {type(val).__name__}")
+        if self.risk_exponent_min > self.risk_exponent_max:
+            raise ValueError("'risk_exponent_min' must be <= 'risk_exponent_max'")
 
     def __post_init__(self) -> None:  # pragma: no cover
         """Automatically validate configuration on instantiation."""
@@ -155,8 +167,7 @@ class DRMConfig:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "DRMConfig":
         allowed = {field.name for field in cls.__dataclass_fields__.values()}
-        # Keep only whitelisted keys
-        filtered_data = {k: v for k, v in data.items() if k in allowed}
-        instance = cls(**filtered_data)
-        # Validation happens automatically via __post_init__
-        return instance
+        unknown = sorted(set(data) - allowed)
+        if unknown:
+            raise ValueError(f"unknown DRMConfig field(s): {', '.join(unknown)}")
+        return cls(**data)

@@ -17,11 +17,14 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "pyyaml>=6.0"]
 yaml = ["pyyaml>=6.0"]
+docs = ["sphinx>=7.0", "myst-parser>=2.0"]
+hf = ["transformers>=4.40", "datasets>=2.18"]
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["src", "."]
+include = ["drm_language_emitter*", "world_model*", "transformer*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 addopts = "-q"

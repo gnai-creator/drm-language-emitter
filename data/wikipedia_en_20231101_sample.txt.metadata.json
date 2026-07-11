@@ -1,0 +1,12 @@
+{
+  "dataset_name": "wikimedia/wikipedia",
+  "dataset_config": "20231101.en",
+  "split": "train",
+  "streaming": true,
+  "max_chars": 50000000,
+  "max_docs": 0,
+  "min_doc_chars": 200,
+  "chars_written": 50000002,
+  "docs_written": 2272,
+  "output": "data\\wikipedia_en_20231101_sample.txt"
+}

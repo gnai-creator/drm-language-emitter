@@ -21,9 +21,15 @@ This is a research scaffold, not a production model and not a claim of superiori
 - [Mathematical Notes](docs/math.md)
 - [Competition Protocol](docs/competition.md)
 - [Tiny World-Model Competition](docs/world_model_competition.md)
+- [Scale LM Comparison](docs/scale_lm_comparison.md)
 - [Benchmark Artifacts](docs/benchmarks/README.md)
 - [Model Card](MODEL_CARD.md)
 - [Limitations](docs/limitations.md)
+- [API Reference](docs/api.md)
+- [Minimal Training Loop](docs/examples/minimal_training_loop.md)
+- [Minimal Training Notebook](docs/notebooks/minimal_training_loop.ipynb)
+- [Compliance Checklist](docs/compliance_checklist.md)
+- [Third-Party Licenses And Data Provenance](docs/third_party_licenses.md)
 - [Commercial License](LICENCE-COMMERCIAL.md)
 
 ## What Makes It Different
