@@ -60,7 +60,103 @@ class DRMConfig:
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
+    # ------------------------------------------------------------------
+    # Validation helpers
+    # ------------------------------------------------------------------
+    def _validate(self) -> None:
+        """Validate configuration values and raise ValueError if any check fails."""
+
+        # Integer / positive checks
+        int_fields = [
+            ("vocab_size", 1, None),
+            ("d_token", 1, None),
+            ("d_state", 1, None),
+            ("n_directions", 1, None),
+            ("metric_rank", 0, None),  # rank can be zero
+            ("hidden_size", 1, None),
+            ("n_flow_steps", 1, None),
+            ("max_seq_len", 1, None),
+            ("gate_top_k", 0, None),
+        ]
+        for name, min_val, max_val in int_fields:
+            val = getattr(self, name)
+            if not isinstance(val, int):
+                raise ValueError(f"'{name}' must be an integer, got {type(val).__name__}")
+            if val < min_val or (max_val is not None and val > max_val):
+                raise ValueError(
+                    f"'{name}' must be between {min_val}"
+                    + (f" and {max_val}" if max_val is not None else "")
+                    + f", got {val}"
+                )
+
+        # Float / non-negative checks
+        float_fields = [
+            ("dt", 0.0, None),
+            ("dropout", 0.0, 1.0),
+            ("lambda_action", 0.0, None),
+            ("lambda_dim_sparsity", 0.0, None),
+            ("lambda_dim_entropy", 0.0, None),
+            ("lambda_dim_variance", 0.0, None),
+            ("target_dim_std", 0.0, None),
+            ("lambda_metric_reg", 0.0, None),
+            ("lambda_metric_diversity", 0.0, None),
+            ("lambda_recurrence", 0.0, None),
+            ("lambda_stability", 0.0, None),
+            ("lambda_blindspot", 0.0, None),
+            ("generation_temperature", 0.1, None),   # temperature > 0
+            ("metric_eps", 0.0, None),
+            ("state_clip_norm", 0.0, None),
+            ("gate_temperature", 0.01, None),       # temperature > 0
+            ("gate_logit_bias", -10.0, 10.0),
+            ("lambda_active_fraction", 0.0, 1.0),
+            ("target_active_fraction", 0.0, 1.0),
+            ("metric_naturalization_strength", 0.0, None),
+            ("metric_naturalization_warmup_steps", 0, None),
+            ("metric_damping", 0.0, None),
+            ("metric_u_min_norm", 0.0, None),
+            ("lambda_metric_u_floor", 0.0, None),
+            ("metric_u_target_norm", 0.0, None),
+            ("lambda_metric_u_target", 0.0, None),
+            ("target_condition", 1.0, None),
+            ("lambda_condition", 0.0, None),
+        ]
+        for name, min_val, max_val in float_fields:
+            val = getattr(self, name)
+            if not isinstance(val, (float, int)):
+                raise ValueError(f"'{name}' must be a number, got {type(val).__name__}")
+            if val < min_val or (max_val is not None and val > max_val):
+                raise ValueError(
+                    f"'{name}' must be between {min_val}"
+                    + (f" and {max_val}" if max_val is not None else "")
+                    + f", got {val}"
+                )
+
+        # Boolean checks
+        bool_fields = [
+            "bounded_state",
+            "use_toroidal_state",
+            "use_powerlaw_risk",
+            "direction_norm",
+            "tie_embeddings",
+            "use_metric_naturalization",
+            "gate_top_k_renorm",
+            "emitter_swiglu",
+            "emitter_residual",
+        ]
+        for name in bool_fields:
+            val = getattr(self, name)
+            if not isinstance(val, bool):
+                raise ValueError(f"'{name}' must be a boolean, got {type(val).__name__}")
+
+    def __post_init__(self) -> None:  # pragma: no cover
+        """Automatically validate configuration on instantiation."""
+        self._validate()
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "DRMConfig":
         allowed = {field.name for field in cls.__dataclass_fields__.values()}
-        return cls(**{k: v for k, v in data.items() if k in allowed})
+        # Keep only whitelisted keys
+        filtered_data = {k: v for k, v in data.items() if k in allowed}
+        instance = cls(**filtered_data)
+        # Validation happens automatically via __post_init__
+        return instance
