@@ -120,9 +120,9 @@ It compares DRM, GPT-2-style, and OPT-style models with approximately matched pa
 
 | model label | family | parameters | seeds | tokens per seed |
 |---|---:|---:|---:|---:|
-| `drm_125m` | DRM | 37,253,702 | 1, 2, 3 | 2,048,000 |
-| `gpt2_125m` | GPT-2 | 36,915,984 | 1, 2, 3 | 2,048,000 |
-| `opt_125m` | OPT | 36,916,992 | 1, 2, 3 | 2,048,000 |
+| `drm_36M` | DRM | 37,253,702 | 1, 2, 3 | 2,048,000 |
+| `gpt2_36M` | GPT-2 | 36,915,984 | 1, 2, 3 | 2,048,000 |
+| `opt_36M` | OPT | 36,916,992 | 1, 2, 3 | 2,048,000 |
 
 The corrected public name for this result is "36M/37M benchmark"; the `125m` label should be treated as a legacy script/configuration label, not the real size of the run.
 
@@ -220,7 +220,7 @@ The result should be read as evidence of feasibility and a promising controlled 
 
 ## What are the exact DRM architectural parameters in the 36M benchmark?
 
-The DRM run uses `configs/drm_125m.yaml` and produced 37,253,702 trainable parameters.
+The DRM run uses the internal config file `configs/drm_125m.yaml` and produced 37,253,702 trainable parameters. The public label for this benchmark result is `drm_36M`.
 
 | parameter | value |
 |---|---:|
@@ -271,7 +271,7 @@ Auxiliary loss and regularization settings:
 
 ## Does the experiment use weight tying?
 
-No. In `configs/drm_125m.yaml`, `tie_embeddings: false`. The current implementation uses `TokenEmbedding.embedding` for input and a separate `LanguageEmitter.lm_head` for output.
+No. In the internal benchmark config `configs/drm_125m.yaml`, `tie_embeddings: false`. The current implementation uses `TokenEmbedding.embedding` for input and a separate `LanguageEmitter.lm_head` for output.
 
 This choice affects parameter count and regularization. It should be declared, and future comparisons should either match or explicitly control this choice.
 

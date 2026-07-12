@@ -3,5 +3,5 @@
 <text x="60" y="34" font-size="22" font-family="Arial" font-weight="700" fill="#111827">Peak CUDA Memory By Model</text>
 <text x="60" y="56" font-size="13" font-family="Arial" fill="#4b5563">Lower is better.</text>
 <line x1="50" y1="470" x2="1060" y2="470" stroke="#111827"/>
-<rect x='70' y='313.6' width='110' height='156.4' fill='#0f766e'/><text x='70' y='305.6' font-size='11'>1.13e+03</text><text x='70' y='488' font-size='10'>drm_125m</text><rect x='204' y='174.3' width='110' height='295.7' fill='#b91c1c'/><text x='204' y='166.3' font-size='11'>2.14e+03</text><text x='204' y='488' font-size='10'>gpt2_125m</text><rect x='338' y='253.2' width='110' height='216.8' fill='#2563eb'/><text x='338' y='245.2' font-size='11'>1.57e+03</text><text x='338' y='488' font-size='10'>opt_125m</text>
+<rect x='70' y='313.6' width='110' height='156.4' fill='#0f766e'/><text x='70' y='305.6' font-size='11'>1.13e+03</text><text x='70' y='488' font-size='10'>drm_36M</text><rect x='204' y='174.3' width='110' height='295.7' fill='#b91c1c'/><text x='204' y='166.3' font-size='11'>2.14e+03</text><text x='204' y='488' font-size='10'>gpt2_36M</text><rect x='338' y='253.2' width='110' height='216.8' fill='#2563eb'/><text x='338' y='245.2' font-size='11'>1.57e+03</text><text x='338' y='488' font-size='10'>opt_36M</text>
 </svg>
