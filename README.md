@@ -23,6 +23,7 @@ This is a research scaffold, not a production model and not a claim of superiori
 - [Competition Protocol](docs/competition.md)
 - [Tiny World-Model Competition](docs/world_model_competition.md)
 - [Scale LM Comparison](docs/scale_lm_comparison.md)
+- [Technical FAQ and Benchmark Methodology](docs/TECHNICAL_QA.md)
 - [Benchmark Artifacts](docs/benchmarks/README.md)
 - [Model Card](MODEL_CARD.md)
 - [Limitations](docs/limitations.md)
