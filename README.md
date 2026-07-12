@@ -18,6 +18,7 @@ This is a research scaffold, not a production model and not a claim of superiori
 ## Quick Links
 
 - [Architecture](ARCHITECTURE.md)
+- [Formal DRM Implementation Roadmap](roadmap.md)
 - [Mathematical Notes](docs/math.md)
 - [Competition Protocol](docs/competition.md)
 - [Tiny World-Model Competition](docs/world_model_competition.md)
@@ -119,7 +120,7 @@ LanguageEmitter(z_{t+1}) -> logits
 
 The model is autoregressive, but its memory is the evolving latent state rather than attention over a token sequence.
 
-Read the full design in [ARCHITECTURE.md](ARCHITECTURE.md).
+Read the full design in [ARCHITECTURE.md](ARCHITECTURE.md). The planned formal DRM implementation layers, including relational transport, holonomy diagnostics, effective rank, Fisher-Rao pullback, toroidal state dynamics, and explicit anchor maps, are tracked in [roadmap.md](roadmap.md).
 
 ## Main Components
 
