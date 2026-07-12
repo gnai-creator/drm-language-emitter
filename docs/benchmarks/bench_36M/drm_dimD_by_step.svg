@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="620" viewBox="0 0 1100 620">
+<rect width="100%" height="100%" fill="white"/>
+<text x="72" y="34" font-size="22" font-family="Arial" font-weight="700" fill="#111827">DRM Active Dimension By Step</text>
+<text x="72" y="56" font-size="13" font-family="Arial" fill="#4b5563">Lower is better for CE/perplexity. Lines show logged checkpoints.</text>
+<line x1="72" y1="548" x2="1028" y2="548" stroke="#111827"/>
+<line x1="72" y1="72" x2="72" y2="548" stroke="#111827"/>
+<polyline points='167.6,501.9 167.6,479.6 167.6,380.1 263.2,177.1 263.2,172.2 263.2,164.0 358.8,154.0 358.8,149.7 358.8,145.9 454.4,148.4 454.4,141.8 454.4,141.0 550.0,136.1 550.0,135.4 550.0,128.4 645.6,129.2 645.6,125.7 645.6,123.4 741.2,125.5 741.2,123.5 741.2,120.7 836.8,124.5 836.8,119.2 836.8,118.8 932.4,129.9 932.4,120.0 932.4,118.9 1028.0,124.0 1028.0,118.5 1028.0,118.1' fill='none' stroke='#0f766e' stroke-width='3'/><line x1='800' y1='88' x2='840' y2='88' stroke='#0f766e' stroke-width='3'/><text x='850' y='92' font-size='12'>drm_125m</text>
+</svg>

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>DRM vs GPT-2 vs OPT Scale Comparison</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; color: #111827; background: #f9fafb; }
+    table { border-collapse: collapse; background: white; }
+    th, td { border: 1px solid #d1d5db; padding: 6px 10px; text-align: right; }
+    th:first-child, td:first-child, th:nth-child(2), td:nth-child(2), th:nth-child(3), td:nth-child(3) { text-align: left; }
+    section { background: white; border: 1px solid #d1d5db; padding: 16px; margin: 20px 0; }
+    svg { max-width: 100%; height: auto; }
+    code { background: #f3f4f6; padding: 2px 4px; }
+  </style>
+</head>
+<body>
+  <h1>DRM vs GPT-2 vs OPT Scale Comparison</h1>
+  <p>All default runs use the same project byte tokenizer and train from scratch. See <code>summary.json</code> and <code>aggregate.csv</code> for machine-readable results.</p>
+  <section>
+    <h2>Aggregate</h2>
+    <table>
+      <thead><tr><th>model</th><th>family</th><th>scale</th><th>params</th><th>best val CE</th><th>final val PPL</th><th>tokens/sec</th><th>max memory MB</th></tr></thead>
+      <tbody><tr><td>drm_125m</td><td>drm</td><td>125m</td><td>37253702</td><td>2.3063</td><td>10.212</td><td>1806.5</td><td>1131.8</td></tr><tr><td>gpt2_125m</td><td>gpt2</td><td>125m</td><td>36915984</td><td>2.8914</td><td>18.640</td><td>61382.2</td><td>2139.2</td></tr><tr><td>opt_125m</td><td>opt</td><td>125m</td><td>36916992</td><td>2.8927</td><td>19.577</td><td>67926.2</td><td>1568.8</td></tr></tbody>
+    </table>
+  </section>
+  <section><h2>val_ce_by_step.svg</h2><svg xmlns="http://www.w3.org/2000/svg" width="1100" height="620" viewBox="0 0 1100 620">
+<rect width="100%" height="100%" fill="white"/>
+<text x="72" y="34" font-size="22" font-family="Arial" font-weight="700" fill="#111827">Validation CE By Step</text>
+<text x="72" y="56" font-size="13" font-family="Arial" fill="#4b5563">Lower is better for CE/perplexity. Lines show logged checkpoints.</text>
+<line x1="72" y1="548" x2="1028" y2="548" stroke="#111827"/>
+<line x1="72" y1="72" x2="72" y2="548" stroke="#111827"/>
+<polyline points='167.6,197.4 167.6,172.8 167.6,137.2 263.2,318.2 263.2,307.0 263.2,264.1 358.8,376.6 358.8,353.5 358.8,317.0 454.4,389.7 454.4,386.5 454.4,299.4 550.0,401.6 550.0,398.2 550.0,395.4 645.6,450.6 645.6,443.9 645.6,434.2 741.2,454.8 741.2,442.2 741.2,442.1 836.8,482.1 836.8,481.1 836.8,459.2 932.4,464.8 932.4,437.2 932.4,418.6 1028.0,501.9 1028.0,466.1 1028.0,452.5' fill='none' stroke='#0f766e' stroke-width='3'/><line x1='800' y1='88' x2='840' y2='88' stroke='#0f766e' stroke-width='3'/><text x='850' y='92' font-size='12'>drm_125m</text><polyline points='167.6,183.0 167.6,157.6 167.6,133.9 263.2,184.9 263.2,171.7 263.2,134.1 358.8,204.5 358.8,172.2 358.8,118.1 454.4,193.3 454.4,157.4 454.4,136.1 550.0,227.7 550.0,198.1 550.0,186.5 645.6,189.0 645.6,178.5 645.6,177.6 741.2,208.1 741.2,183.0 741.2,182.0 836.8,205.1 836.8,202.2 836.8,150.9 932.4,225.7 932.4,206.8 932.4,191.5 1028.0,211.2 1028.0,209.2 1028.0,194.6' fill='none' stroke='#b91c1c' stroke-width='3'/><line x1='800' y1='110' x2='840' y2='110' stroke='#b91c1c' stroke-width='3'/><text x='850' y='114' font-size='12'>gpt2_125m</text><polyline points='167.6,142.3 167.6,134.4 167.6,128.1 263.2,174.5 263.2,166.4 263.2,166.1 358.8,207.1 358.8,186.0 358.8,167.0 454.4,230.6 454.4,182.8 454.4,162.3 550.0,201.0 550.0,167.2 550.0,134.7 645.6,223.4 645.6,216.6 645.6,191.4 741.2,221.2 741.2,169.5 741.2,163.6 836.8,204.4 836.8,184.8 836.8,169.6 932.4,219.1 932.4,204.4 932.4,120.5 1028.0,216.1 1028.0,175.6 1028.0,159.4' fill='none' stroke='#2563eb' stroke-width='3'/><line x1='800' y1='132' x2='840' y2='132' stroke='#2563eb' stroke-width='3'/><text x='850' y='136' font-size='12'>opt_125m</text>
+</svg>
+</section><section><h2>val_ppl_by_step.svg</h2><svg xmlns="http://www.w3.org/2000/svg" width="1100" height="620" viewBox="0 0 1100 620">
+<rect width="100%" height="100%" fill="white"/>
+<text x="72" y="34" font-size="22" font-family="Arial" font-weight="700" fill="#111827">Validation Perplexity By Step</text>
+<text x="72" y="56" font-size="13" font-family="Arial" fill="#4b5563">Lower is better for CE/perplexity. Lines show logged checkpoints.</text>
+<line x1="72" y1="548" x2="1028" y2="548" stroke="#111827"/>
+<line x1="72" y1="72" x2="72" y2="548" stroke="#111827"/>
+<polyline points='167.6,226.5 167.6,194.9 167.6,146.0 263.2,358.6 263.2,347.8 263.2,303.8 358.8,410.7 358.8,390.9 358.8,357.4 454.4,421.5 454.4,418.9 454.4,340.3 550.0,431.0 550.0,428.3 550.0,426.1 645.6,467.6 645.6,462.9 645.6,455.9 741.2,470.6 741.2,461.7 741.2,461.6 836.8,489.2 836.8,488.5 836.8,473.7 932.4,477.5 932.4,458.0 932.4,444.2 1028.0,501.9 1028.0,478.4 1028.0,469.0' fill='none' stroke='#0f766e' stroke-width='3'/><line x1='800' y1='88' x2='840' y2='88' stroke='#0f766e' stroke-width='3'/><text x='850' y='92' font-size='12'>drm_125m</text><polyline points='167.6,208.2 167.6,174.6 167.6,141.3 263.2,210.7 263.2,193.5 263.2,141.5 358.8,235.3 358.8,194.2 358.8,118.1 454.4,221.3 454.4,174.2 454.4,144.5 550.0,263.0 550.0,227.4 550.0,212.7 645.6,215.9 645.6,202.4 645.6,201.2 741.2,239.7 741.2,208.3 741.2,206.9 836.8,236.0 836.8,232.5 836.8,165.3 932.4,260.7 932.4,238.1 932.4,219.1 1028.0,243.4 1028.0,241.0 1028.0,223.0' fill='none' stroke='#b91c1c' stroke-width='3'/><line x1='800' y1='110' x2='840' y2='110' stroke='#b91c1c' stroke-width='3'/><text x='850' y='114' font-size='12'>gpt2_125m</text><polyline points='167.6,153.3 167.6,141.9 167.6,132.9 263.2,197.1 263.2,186.4 263.2,186.0 358.8,238.5 358.8,212.1 358.8,187.2 454.4,266.4 454.4,207.9 454.4,180.9 550.0,231.0 550.0,187.5 550.0,142.4 645.6,258.1 645.6,250.0 645.6,218.9 741.2,255.4 741.2,190.5 741.2,182.7 836.8,235.1 836.8,210.5 836.8,190.7 932.4,252.9 932.4,235.2 932.4,121.6 1028.0,249.4 1028.0,198.6 1028.0,176.9' fill='none' stroke='#2563eb' stroke-width='3'/><line x1='800' y1='132' x2='840' y2='132' stroke='#2563eb' stroke-width='3'/><text x='850' y='136' font-size='12'>opt_125m</text>
+</svg>
+</section><section><h2>best_val_ce_by_model.svg</h2><svg xmlns="http://www.w3.org/2000/svg" width="1100" height="580" viewBox="0 0 1100 580">
+<rect width="100%" height="100%" fill="white"/>
+<text x="60" y="34" font-size="22" font-family="Arial" font-weight="700" fill="#111827">Best Validation CE By Model</text>
+<text x="60" y="56" font-size="13" font-family="Arial" fill="#4b5563">Lower is better.</text>
+<line x1="50" y1="470" x2="1060" y2="470" stroke="#111827"/>
+<rect x='70' y='234.3' width='110' height='235.7' fill='#0f766e'/><text x='70' y='226.3' font-size='11'>2.31</text><text x='70' y='488' font-size='10'>drm_125m</text><rect x='204' y='174.5' width='110' height='295.5' fill='#b91c1c'/><text x='204' y='166.5' font-size='11'>2.89</text><text x='204' y='488' font-size='10'>gpt2_125m</text><rect x='338' y='174.3' width='110' height='295.7' fill='#2563eb'/><text x='338' y='166.3' font-size='11'>2.89</text><text x='338' y='488' font-size='10'>opt_125m</text>
+</svg>
+</section><section><h2>tokens_sec_by_model.svg</h2><svg xmlns="http://www.w3.org/2000/svg" width="1100" height="580" viewBox="0 0 1100 580">
+<rect width="100%" height="100%" fill="white"/>
+<text x="60" y="34" font-size="22" font-family="Arial" font-weight="700" fill="#111827">Tokens Per Second By Model</text>
+<text x="60" y="56" font-size="13" font-family="Arial" fill="#4b5563">Higher is better.</text>
+<line x1="50" y1="470" x2="1060" y2="470" stroke="#111827"/>
+<rect x='70' y='462.1' width='110' height='7.9' fill='#0f766e'/><text x='70' y='454.1' font-size='11'>1.81e+03</text><text x='70' y='488' font-size='10'>drm_125m</text><rect x='204' y='202.8' width='110' height='267.2' fill='#b91c1c'/><text x='204' y='194.8' font-size='11'>6.14e+04</text><text x='204' y='488' font-size='10'>gpt2_125m</text><rect x='338' y='174.3' width='110' height='295.7' fill='#2563eb'/><text x='338' y='166.3' font-size='11'>6.79e+04</text><text x='338' y='488' font-size='10'>opt_125m</text>
+</svg>
+</section><section><h2>params_by_model.svg</h2><svg xmlns="http://www.w3.org/2000/svg" width="1100" height="580" viewBox="0 0 1100 580">
+<rect width="100%" height="100%" fill="white"/>
+<text x="60" y="34" font-size="22" font-family="Arial" font-weight="700" fill="#111827">Parameter Count By Model</text>
+<text x="60" y="56" font-size="13" font-family="Arial" fill="#4b5563">Lower is better.</text>
+<line x1="50" y1="470" x2="1060" y2="470" stroke="#111827"/>
+<rect x='70' y='174.3' width='110' height='295.7' fill='#0f766e'/><text x='70' y='166.3' font-size='11'>3.73e+07</text><text x='70' y='488' font-size='10'>drm_125m</text><rect x='204' y='177.0' width='110' height='293.0' fill='#b91c1c'/><text x='204' y='169.0' font-size='11'>3.69e+07</text><text x='204' y='488' font-size='10'>gpt2_125m</text><rect x='338' y='177.0' width='110' height='293.0' fill='#2563eb'/><text x='338' y='169.0' font-size='11'>3.69e+07</text><text x='338' y='488' font-size='10'>opt_125m</text>
+</svg>
+</section><section><h2>memory_by_model.svg</h2><svg xmlns="http://www.w3.org/2000/svg" width="1100" height="580" viewBox="0 0 1100 580">
+<rect width="100%" height="100%" fill="white"/>
+<text x="60" y="34" font-size="22" font-family="Arial" font-weight="700" fill="#111827">Peak CUDA Memory By Model</text>
+<text x="60" y="56" font-size="13" font-family="Arial" fill="#4b5563">Lower is better.</text>
+<line x1="50" y1="470" x2="1060" y2="470" stroke="#111827"/>
+<rect x='70' y='313.6' width='110' height='156.4' fill='#0f766e'/><text x='70' y='305.6' font-size='11'>1.13e+03</text><text x='70' y='488' font-size='10'>drm_125m</text><rect x='204' y='174.3' width='110' height='295.7' fill='#b91c1c'/><text x='204' y='166.3' font-size='11'>2.14e+03</text><text x='204' y='488' font-size='10'>gpt2_125m</text><rect x='338' y='253.2' width='110' height='216.8' fill='#2563eb'/><text x='338' y='245.2' font-size='11'>1.57e+03</text><text x='338' y='488' font-size='10'>opt_125m</text>
+</svg>
+</section><section><h2>drm_action_by_step.svg</h2><svg xmlns="http://www.w3.org/2000/svg" width="1100" height="620" viewBox="0 0 1100 620">
+<rect width="100%" height="100%" fill="white"/>
+<text x="72" y="34" font-size="22" font-family="Arial" font-weight="700" fill="#111827">DRM Action Mean By Step</text>
+<text x="72" y="56" font-size="13" font-family="Arial" fill="#4b5563">Lower is better for CE/perplexity. Lines show logged checkpoints.</text>
+<line x1="72" y1="548" x2="1028" y2="548" stroke="#111827"/>
+<line x1="72" y1="72" x2="72" y2="548" stroke="#111827"/>
+<polyline points='167.6,385.2 167.6,350.4 167.6,217.5 263.2,402.5 263.2,378.2 263.2,371.1 358.8,388.9 358.8,363.8 358.8,329.3 454.4,373.6 454.4,361.1 454.4,336.9 550.0,370.5 550.0,361.5 550.0,333.4 645.6,377.8 645.6,335.4 645.6,333.6 741.2,356.3 741.2,348.4 741.2,346.2 836.8,380.0 836.8,363.2 836.8,354.6 932.4,377.7 932.4,354.0 932.4,328.6 1028.0,352.4 1028.0,351.9 1028.0,349.0' fill='none' stroke='#0f766e' stroke-width='3'/><line x1='800' y1='88' x2='840' y2='88' stroke='#0f766e' stroke-width='3'/><text x='850' y='92' font-size='12'>drm_125m</text>
+</svg>
+</section><section><h2>drm_dimD_by_step.svg</h2><svg xmlns="http://www.w3.org/2000/svg" width="1100" height="620" viewBox="0 0 1100 620">
+<rect width="100%" height="100%" fill="white"/>
+<text x="72" y="34" font-size="22" font-family="Arial" font-weight="700" fill="#111827">DRM Active Dimension By Step</text>
+<text x="72" y="56" font-size="13" font-family="Arial" fill="#4b5563">Lower is better for CE/perplexity. Lines show logged checkpoints.</text>
+<line x1="72" y1="548" x2="1028" y2="548" stroke="#111827"/>
+<line x1="72" y1="72" x2="72" y2="548" stroke="#111827"/>
+<polyline points='167.6,501.9 167.6,479.6 167.6,380.1 263.2,177.1 263.2,172.2 263.2,164.0 358.8,154.0 358.8,149.7 358.8,145.9 454.4,148.4 454.4,141.8 454.4,141.0 550.0,136.1 550.0,135.4 550.0,128.4 645.6,129.2 645.6,125.7 645.6,123.4 741.2,125.5 741.2,123.5 741.2,120.7 836.8,124.5 836.8,119.2 836.8,118.8 932.4,129.9 932.4,120.0 932.4,118.9 1028.0,124.0 1028.0,118.5 1028.0,118.1' fill='none' stroke='#0f766e' stroke-width='3'/><line x1='800' y1='88' x2='840' y2='88' stroke='#0f766e' stroke-width='3'/><text x='850' y='92' font-size='12'>drm_125m</text>
+</svg>
+</section><section><h2>drm_condition_by_step.svg</h2><svg xmlns="http://www.w3.org/2000/svg" width="1100" height="620" viewBox="0 0 1100 620">
+<rect width="100%" height="100%" fill="white"/>
+<text x="72" y="34" font-size="22" font-family="Arial" font-weight="700" fill="#111827">DRM Condition Proxy By Step</text>
+<text x="72" y="56" font-size="13" font-family="Arial" fill="#4b5563">Lower is better for CE/perplexity. Lines show logged checkpoints.</text>
+<line x1="72" y1="548" x2="1028" y2="548" stroke="#111827"/>
+<line x1="72" y1="72" x2="72" y2="548" stroke="#111827"/>
+<polyline points='167.6,449.6 167.6,438.8 167.6,426.6 263.2,484.5 263.2,475.4 263.2,118.1 358.8,495.2 358.8,487.8 358.8,455.8 454.4,488.7 454.4,477.7 454.4,477.3 550.0,487.1 550.0,479.1 550.0,472.3 645.6,484.3 645.6,472.9 645.6,464.9 741.2,486.2 741.2,468.8 741.2,462.2 836.8,501.9 836.8,484.2 836.8,473.9 932.4,483.0 932.4,479.4 932.4,471.4 1028.0,479.8 1028.0,466.1 1028.0,464.0' fill='none' stroke='#0f766e' stroke-width='3'/><line x1='800' y1='88' x2='840' y2='88' stroke='#0f766e' stroke-width='3'/><text x='850' y='92' font-size='12'>drm_125m</text>
+</svg>
+</section>
+</body>
+</html>

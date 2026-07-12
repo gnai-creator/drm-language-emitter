@@ -1,0 +1,7 @@
+{
+  "dataset": "wikipedia-en",
+  "output": "data\\wikipedia_en_20231101_sample.txt",
+  "metadata": "data\\wikipedia_en_20231101_sample.txt.metadata.json",
+  "reused_existing": true,
+  "existing_bytes": 50154993
+}
