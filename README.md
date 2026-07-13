@@ -289,4 +289,12 @@ Not allowed:
 
 ## License
 
-This project is released under AGPL-3.0. For commercial licensing, see [LICENCE-COMMERCIAL.md](LICENCE-COMMERCIAL.md) or contact `felupe@truthagi.ai`.
+Copyright © 2026 Felipe Maya Muniz
+SPDX-License-Identifier: AGPL-3.0-only
+
+This project is dual-licensed:
+- GNU AGPL v3.0 only; or
+- a separate commercial license.
+
+Commercial licensing and acquisition inquiries:
+[LICENCE-COMMERCIAL.md](LICENCE-COMMERCIAL.md) or contact `felupe@truthagi.ai`.
