@@ -27,10 +27,13 @@ from prepare_wikipedia_en import (
 
 MODEL_SPECS: dict[str, dict[str, Any]] = {
     "drm_125m": {"family": "drm", "config": "configs/drm_125m.yaml", "scale": "125m"},
+    "drm_125m_real": {"family": "drm", "config": "configs/drm_125m_real.yaml", "scale": "125m_real"},
     "drm_350m": {"family": "drm", "config": "configs/drm_350m.yaml", "scale": "350m"},
     "gpt2_125m": {"family": "gpt2", "scale": "125m", "n_layer": 12, "n_head": 12, "n_embd": 504},
+    "gpt2_125m_real": {"family": "gpt2", "scale": "125m_real", "n_layer": 13, "n_head": 14, "n_embd": 896},
     "gpt2_350m": {"family": "gpt2", "scale": "350m", "n_layer": 24, "n_head": 16, "n_embd": 1024},
     "opt_125m": {"family": "opt", "scale": "125m", "hidden_size": 504, "layers": 12, "heads": 12, "ffn_dim": 2016},
+    "opt_125m_real": {"family": "opt", "scale": "125m_real", "hidden_size": 896, "layers": 13, "heads": 14, "ffn_dim": 3584},
     "opt_350m": {"family": "opt", "scale": "350m", "hidden_size": 1024, "layers": 24, "heads": 16, "ffn_dim": 4096},
 }
 
