@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="580" viewBox="0 0 1100 580">
+<rect width="100%" height="100%" fill="white"/>
+<text x="60" y="34" font-size="22" font-family="Arial" font-weight="700" fill="#111827">Parameter Count By Model</text>
+<text x="60" y="56" font-size="13" font-family="Arial" fill="#4b5563">Lower is better.</text>
+<line x1="50" y1="470" x2="1060" y2="470" stroke="#111827"/>
+<rect x='70' y='176.5' width='110' height='293.5' fill='#0f766e'/><text x='70' y='168.5' font-size='11'>1.25e+08</text><text x='70' y='488' font-size='10'>drm_125m_real</text><rect x='204' y='174.4' width='110' height='295.6' fill='#b91c1c'/><text x='204' y='166.4' font-size='11'>1.26e+08</text><text x='204' y='488' font-size='10'>gpt2_125m_real</text><rect x='338' y='174.3' width='110' height='295.7' fill='#2563eb'/><text x='338' y='166.3' font-size='11'>1.26e+08</text><text x='338' y='488' font-size='10'>opt_125m_real</text>
+</svg>

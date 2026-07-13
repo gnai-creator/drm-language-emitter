@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="620" viewBox="0 0 1100 620">
+<rect width="100%" height="100%" fill="white"/>
+<text x="72" y="34" font-size="22" font-family="Arial" font-weight="700" fill="#111827">DRM Condition Proxy By Step</text>
+<text x="72" y="56" font-size="13" font-family="Arial" fill="#4b5563">Lower is better for CE/perplexity. Lines show logged checkpoints.</text>
+<line x1="72" y1="548" x2="1028" y2="548" stroke="#111827"/>
+<line x1="72" y1="72" x2="72" y2="548" stroke="#111827"/>
+<polyline points='167.6,491.4 167.6,488.0 167.6,477.8 263.2,498.1 263.2,498.1 263.2,495.5 358.8,500.7 358.8,500.0 358.8,499.9 454.4,499.3 454.4,492.4 454.4,118.1 550.0,501.9 550.0,501.7 550.0,499.7 645.6,499.8 645.6,499.8 645.6,499.5 741.2,499.8 741.2,499.7 741.2,499.5 836.8,500.9 836.8,499.8 836.8,499.7 932.4,501.4 932.4,499.9 932.4,499.7 1028.0,499.8 1028.0,497.3 1028.0,492.6' fill='none' stroke='#0f766e' stroke-width='3'/><line x1='800' y1='88' x2='840' y2='88' stroke='#0f766e' stroke-width='3'/><text x='850' y='92' font-size='12'>drm_125m_real</text>
+</svg>

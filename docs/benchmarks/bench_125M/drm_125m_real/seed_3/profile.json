@@ -1,0 +1,11 @@
+{
+  "embedding": 7.013333379290998e-05,
+  "state_initializer": 3.6999995548588536e-05,
+  "direction_field": 0.12762496668923026,
+  "relational_metric": 0.1373086333333049,
+  "dynamics": 0.03577946671187723,
+  "metric_solve": 0.011476100019838972,
+  "losses": 0.0022679999868463105,
+  "emitter": 0.020427299998118542,
+  "total_profiled_sec": 0.3349916000685577
+}
