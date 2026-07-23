@@ -53,8 +53,12 @@ cover/
 runs/
 data/tiny_world/
 data/tiny_world_smoke/
+data/tokens/
+data/tokens_*/
 data/wikipedia_en_20231101_500m.txt
 data/wikipedia_en_20231101_500m.txt.metadata.json
+data/wikipedia_en_20231101_5b.txt
+data/wikipedia_en_20231101_5b.txt.metadata.json
 
 # Translations
 *.mo

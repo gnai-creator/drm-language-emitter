@@ -227,7 +227,7 @@ class DRMEmitterModel(nn.Module):
             hard_active_025_value = torch.stack(active_025_values, dim=1).mean()
             hard_active_075_value = torch.stack(active_075_values, dim=1).mean()
             hard_active_090_value = torch.stack(active_090_values, dim=1).mean()
-            all_gates = torch.cat(gate_flat_values)
+            all_gates = torch.cat(gate_flat_values).float()
             gate_quantiles = torch.quantile(
                 all_gates,
                 torch.tensor([0.10, 0.25, 0.50, 0.75, 0.90], device=all_gates.device, dtype=all_gates.dtype),

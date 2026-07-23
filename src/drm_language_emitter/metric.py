@@ -96,12 +96,18 @@ class RelationalMetric(nn.Module):
         if metric_u.shape[-1] == 0:
             solved = diag_solution
         else:
-            d_inv_u = inv_diag.unsqueeze(-1) * metric_u
-            middle = torch.eye(metric_u.shape[-1], device=v.device, dtype=v.dtype).unsqueeze(0)
-            middle = middle + torch.bmm(metric_u.transpose(1, 2), d_inv_u)
-            rhs = torch.bmm(metric_u.transpose(1, 2), diag_solution.unsqueeze(-1))
-            correction_coeff = torch.linalg.solve(middle, rhs)
-            correction = torch.bmm(d_inv_u, correction_coeff).squeeze(-1)
+            solve_dtype = torch.float32 if v.dtype in {torch.float16, torch.bfloat16} else v.dtype
+            autocast_device = v.device.type if v.device.type in {"cuda", "cpu"} else "cpu"
+            with torch.autocast(device_type=autocast_device, enabled=False):
+                metric_u_solve = metric_u.to(solve_dtype)
+                inv_diag_solve = inv_diag.to(solve_dtype)
+                diag_solution_solve = diag_solution.to(solve_dtype)
+                d_inv_u = inv_diag_solve.unsqueeze(-1) * metric_u_solve
+                middle = torch.eye(metric_u.shape[-1], device=v.device, dtype=solve_dtype).unsqueeze(0)
+                middle = middle + torch.bmm(metric_u_solve.transpose(1, 2), d_inv_u)
+                rhs = torch.bmm(metric_u_solve.transpose(1, 2), diag_solution_solve.unsqueeze(-1))
+                correction_coeff = torch.linalg.solve(middle, rhs)
+                correction = torch.bmm(d_inv_u, correction_coeff).squeeze(-1).to(v.dtype)
             solved = diag_solution - correction
         return (1.0 - strength) * v + strength * solved
 
